@@ -29,9 +29,40 @@ Represent potential joint centers
 Draw bounding boxes around detected joints
 Mark joint centers with red dots
 
-## C
+## Convolutional Neural Network
+This part of the project focuses on classifying different types of finger joints—Metacarpophalangeal (MCP), Proximal Interphalangeal (PIP), and Distal Interphalangeal (DIP)—from hand X-ray images using a Convolutional Neural Network (CNN). Building upon the earlier computer vision-based joint localization approach, this method leverages supervised learning to classify extracted joint regions automatically. The dataset consists of hand X-ray images along with corresponding annotation text files containing joint labels and their coordinates. These annotations are used to extract fixed-size image patches (32×32 pixels) centered around each joint location, which serve as inputs to the CNN model.
 
+The data preprocessing pipeline begins by matching image files with their corresponding annotation files and splitting the dataset into training and testing subsets. For each annotated joint, a 32×32 grayscale patch is cropped around the provided coordinates. Invalid or improperly sized patches are filtered out to ensure consistency in the dataset. The labels (MCP, PIP, DIP) are encoded using label encoding and further converted into one-hot encoded vectors to support multi-class classification. The input images are reshaped to include a channel dimension, making them compatible with CNN input requirements.
 
-Train a machine learning method for object detection. A pre-labeled dataset will be provided, and you can use it to train the model to detect the joints.
+The CNN architecture consists of multiple convolutional and max-pooling layers for feature extraction, followed by fully connected dense layers for classification. Specifically, the model includes two convolutional layers with ReLU activation, each followed by max-pooling to reduce spatial dimensions. The extracted features are flattened and passed through dense layers before the final softmax layer, which outputs probabilities for the three joint classes. The model is compiled using categorical cross-entropy loss and the Adam optimizer, and it is trained over multiple epochs with validation on the test dataset.
 
-https://my.sharepoint.com/:f:/g/personal/jshan_pace_edu/EvPv8dKmH_tOmvkBGNsw-gYB7UwR0WZFBXbR3fHmKoxnlg?e=7H26S6
+### Model Architecture (CNN)
+- Input: (32, 32, 1) grayscale images
+- Layers:
+1. Conv2D (32 filters, 4×4, ReLU)
+2. MaxPooling (2×2)
+3. Conv2D (32 filters, 4×4, ReLU)
+4. MaxPooling (2×2)
+5. Flatten
+6. Dense (128, ReLU)
+7. Dense (32, ReLU)
+8. Output Layer (3 neurons, Softmax)
+   
+### Training
+- Loss: categorical_crossentropy
+- Optimizer: Adam
+- Epochs: 20
+- Validation: Test dataset
+
+### Evaluation Metrics
+- Accuracy
+- Precision
+- Recall
+- F1 Score
+  
+### Visualization
+- Training vs Validation Loss
+- Training vs Validation Accuracy
+
+Dataset:
+https://my.sharepoint.com/:f:/g/personal/jshan/EvPv8dKmH_tOmvkBGNsw-gYB7UwR0WZFBXbR3fHmKoxnlg?e=7H26S6
