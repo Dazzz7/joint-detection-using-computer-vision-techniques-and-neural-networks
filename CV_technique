@@ -1,0 +1,104 @@
+import cv2
+import numpy as np
+import os
+
+
+def preprocess_image(image, alpha, beta, blur_kernel_size):
+    # Adjust contrast and brightness
+    adjusted_image = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
+    # Apply Gaussian blur
+    blurred_image = cv2.GaussianBlur(
+        adjusted_image, (blur_kernel_size, blur_kernel_size), 0
+    )
+    return blurred_image
+
+
+def auto_canny(image, sigma=0.33):
+    v = np.median(image)
+
+    lower = int(max(0, (1.0 - sigma) * v))
+    higher = int(min(255, (1.0 + sigma) * v))
+    edges = cv2.Canny(image, lower, higher)
+    return edges
+
+
+def detect_contours(edges):
+    contours, _ = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    return contours
+
+
+def blob_detection(image):
+    params = cv2.SimpleBlobDetector_Params()
+
+    params.filterByArea = True
+    params.minArea = 10  # Minimum area of the blobs
+    params.maxArea = 5000  # Maximum area of the blobs
+    params.filterByCircularity = False
+    params.filterByInertia = False
+    params.filterByConvexity = False
+
+    detector = cv2.SimpleBlobDetector_create(params)
+
+    keypoints = detector.detect(image)
+    return keypoints
+
+
+def draw_bounding_boxes(image, keypoints):
+    output_image = (
+        cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+        if len(image.shape) == 2
+        else image.copy()
+    )
+
+    for keyPoint in keypoints:
+        x, y = np.int0(keyPoint.pt)
+        size = np.int0(keyPoint.size)
+        top_left = (x - size // 2, y - size // 2)
+        bottom_right = (x + size // 2, y + size // 2)
+        cv2.rectangle(output_image, top_left, bottom_right, (255, 0, 0), 2)
+        cv2.circle(output_image, (x, y), 3, (0, 0, 255), -1)  # Red dot at the center
+    return output_image
+
+
+alpha = 1.5  # Contrast control
+beta = 50  # Brightness control
+blur_kernel_size = 5  # Gaussian blur kernel size
+
+
+base_folder = "/Users/vineettamhane/YOLO/normalized_images"
+final_folder = os.path.join(base_folder, "final_results3")
+
+
+os.makedirs(final_folder, exist_ok=True)
+
+
+for filename in os.listdir(base_folder):
+    file_path = os.path.join(base_folder, filename)
+
+    if filename.lower().endswith((".png", ".jpg", ".jpeg")) and os.path.isfile(
+        file_path
+    ):
+        original_image = cv2.imread(file_path, cv2.IMREAD_GRAYSCALE)
+        if original_image is None:
+            print(f"Failed to load image: {file_path}")
+            continue
+
+        processed_image = preprocess_image(
+            original_image, alpha, beta, blur_kernel_size
+        )
+
+        # Apply automatic Canny edge detection
+        edges = auto_canny(processed_image)
+
+        # Detect contours
+        contours = detect_contours(edges)
+
+        # Blob detection
+        keypoints = blob_detection(edges)
+
+        # Draw bounding boxes on the original image
+        final_image = draw_bounding_boxes(original_image, keypoints)
+
+        final_save_path = os.path.join(final_folder, filename)
+        cv2.imwrite(final_save_path, final_image)
+        print(f"Final image processed and saved: {final_save_path}")
